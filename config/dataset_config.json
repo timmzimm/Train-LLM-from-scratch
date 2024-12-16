@@ -1,0 +1,8 @@
+{
+    "dataset_name": "microsoft/orca-agentinstruct-1M-v1",
+    "train_split": "analytical_reasoning",
+    "val_split": "text_modification",
+    "max_train_samples": 10000,
+    "max_val_samples": 2000
+  }
+  

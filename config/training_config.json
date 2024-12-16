@@ -1,0 +1,10 @@
+{
+    "block_size": 1024,
+    "batch_size": 2,
+    "epochs": 1,
+    "learning_rate": 0.0003,
+    "vocab_size_limit": 30000,
+    "merges_count": 100,
+    "special_tokens": ["<|endoftext|>"]
+  }
+  
