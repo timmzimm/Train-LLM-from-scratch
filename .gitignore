@@ -1,4 +1,6 @@
 model_checkpoint/model.pt
+train.py
+utils.py
 
 **/__pycache__/
 **/*.pyc

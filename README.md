@@ -1,83 +1,40 @@
-GPT-2 Style LLM Training from Scratch
+# GPT-2 Style LLM Training from Scratch
 
-Inspired by Sebastian Raschka's repository and his book, but not borrowed from it. This project implements a simplified GPT-2 style model and trains it from scratch on a large instruction dataset. The code is structured, modular, and configured through dedicated JSON files.
+**Inspired by [Sebastian Raschka's](https://github.com/rasbt/LLMs-from-scratch) repository and his book, but not borrowed from it.**  
+This project implements a simplified GPT-2 style model (~120M parameters) from scratch and trains it on a large instruction dataset. The code is modular, uses configuration files, and aims to be educational—demonstrating the full pipeline without external large language model libraries.
 
-<p align="center"> <img src="https://user-images.githubusercontent.com/your_image.png" alt="Model Training Illustration" width="500"> </p>
-Overview
-This repository demonstrates how to:
+## Overview
 
-Tokenize raw text using a simplified Byte-Pair Encoding (BPE) tokenizer inspired by GPT-2.
-Train a GPT-2 style model from scratch, including the multi-head causal self-attention architecture, residual connections, and layer normalization.
-Use configuration files (.json in config/) to control data preprocessing, model architecture, and training hyperparameters.
-The approach is educational, helping you understand the full pipeline of building and training a GPT-like model without relying on external libraries like transformers.
+This repository showcases:
 
-Dataset
-We use the Orca Agent Instruct Dataset (1M) from Microsoft. This dataset provides a variety of user-assistant interactions that can serve as a foundation for instruction-tuned language models. It contains messages with user and assistant roles, enabling models to learn from diverse conversational prompts and responses.
+- **Custom BPE Tokenization:** A simplified Byte-Pair Encoding tokenizer inspired by GPT-2.
+- **GPT-2 Style Model Architecture:** Multi-head causal self-attention, residual connections, and layer norms.
+- **Config-Driven Pipeline:** All parameters are controlled via JSON configs in the `config/` directory.
 
-Key Features:
+## Dataset
 
-High-quality instructions: The dataset is curated to reflect a wide range of tasks.
-Large scale: With around 1 million samples, it supports extensive training at scale.
-Realistic dialogues: It mimics real assistant-user interactions, improving model adaptation to instruction-like queries.
-Project Structure
-lua
-Copy code
-project/
-|-- main.py                  # Entry point for training
-|-- config/
-|   |-- dataset_config.json
-|   |-- model_config.json
-|   `-- training_config.json
-|-- notebooks/               # For analysis and experiments (Jupyter)
-|-- src/
-|   |-- tokenization/
-|   |   `-- bpe_tokenizer.py
-|   |-- model/
-|   |   `-- gpt2.py
-|   |-- data/
-|   |   `-- dataset.py
-|   |-- training/
-|   |   `-- train.py
-|   `-- utils/
-|       `-- evaluation.py
-|-- model_checkpoint/
-|   |-- tokenizer.json       # Saved tokenizer
-|   `-- model.pt             # Model weights (not committed by default)
-|-- requirements.txt
-|-- README.md
-|-- .gitignore
-Requirements
-Python: 3.11.10
-Dependencies listed in requirements.txt.
-Installation & Usage
-Clone the repository:
+We train on the [Orca Agent Instruct Dataset (1M)](https://huggingface.co/datasets/microsoft/orca-agentinstruct-1M-v1) by Microsoft. This dataset:
 
-bash
-Copy code
-git clone https://github.com/yourusername/your-repo.git
-Change directory:
+- Contains ~1 million user-assistant message pairs.
+- Covers a wide range of instructions and responses.
+- Provides realistic conversational patterns for better model adaptation.
 
-bash
-Copy code
-cd your-repo
-Install requirements:
+## Requirements
 
-bash
-Copy code
-pip install -r requirements.txt
-Run training:
+- **Python:** 3.11.10
+- Other dependencies listed in `requirements.txt`.
 
-bash
-Copy code
-python main.py
-This will:
+## Installation & Usage
 
-Load configurations from config/*.json
-Download and preprocess the dataset.
-Train the tokenizer and model.
-Save the trained model and tokenizer under model_checkpoint/.
-Note: By default, the model.pt file is not tracked by Git due to .gitignore settings.
+**Clone the repository:**
+   ```bash
+   git clone https://github.com/timmzimm/Train-LLM-from-scratch.git
+   cd Train-LLM-from-scratch
+   pip install -r requirements.txt
+   ```
 
-Acknowledgments
-Sebastian Raschka: For inspiration from his repository and book, which laid out a transparent approach to LLMs. This code is newly implemented and not borrowed directly.
-Microsoft & Hugging Face: For providing and hosting the Orca dataset.
+## Acknowledgments
+Sebastian Raschka: His transparent approach to LLMs was an inspiration.
+Microsoft & Hugging Face: For providing and hosting the Orca dataset
+
+
