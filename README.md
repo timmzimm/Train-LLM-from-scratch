@@ -1,6 +1,8 @@
 # GPT-2 Style LLM Training from Scratch
 
 **Inspired by [Sebastian Raschka's (https://github.com/rasbt/LLMs-from-scratch) repository] and his book, but not borrowed from it.**  
+
+
 This project implements a simplified GPT-2 style model (~120M parameters) from scratch and trains it on a large instruction dataset. The code is modular, uses configuration files, and aims to be educational — demonstrating the full pipeline without external large language model libraries.
 
 ## Overview

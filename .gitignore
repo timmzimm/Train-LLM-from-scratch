@@ -11,3 +11,6 @@ model_checkpoint/model.pt
 # Ignore OS-specific files
 .DS_Store
 
+# Ignore old scripts
+train.py
+utils.py 
