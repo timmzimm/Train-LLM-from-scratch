@@ -61,7 +61,7 @@ class BPEVocabulary:
 
 class BPETokenizer:
     """
-    A simplified BPE tokenizer that:
+    A simplified BPE tokenizer (not byte-level) that:
     - Learns merges from a corpus.
     - Encodes and decodes text using the learned merges.
     """

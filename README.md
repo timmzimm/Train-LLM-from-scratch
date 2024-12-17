@@ -1,6 +1,6 @@
 # GPT-2 Style LLM Training from Scratch
 
-**Inspired by [Sebastian Raschka's (https://github.com/rasbt/LLMs-from-scratch) repository] and his book, but not borrowed from it.**  
+**Inspired by [Sebastian Raschka's repository] (https://github.com/rasbt/LLMs-from-scratch) and his book, but not borrowed from it.**  
 
 
 This project implements a simplified GPT-2 style model (~120M parameters) from scratch and trains it on a large instruction dataset. The code is modular, uses configuration files, and aims to be educational — demonstrating the full pipeline without external large language model libraries.
@@ -28,7 +28,6 @@ We train on the [Orca Agent Instruct Dataset (1M)](https://huggingface.co/datase
 
 ## Installation & Usage
 
-**Clone the repository:**
    ```bash
    git clone https://github.com/timmzimm/Train-LLM-from-scratch.git
    cd Train-LLM-from-scratch
