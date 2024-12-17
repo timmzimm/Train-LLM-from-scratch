@@ -1,14 +1,13 @@
+# Ignore model checkpoints
 model_checkpoint/model.pt
-train.py
-utils.py
 
+# Ignore Python cache
 **/__pycache__/
 **/*.pyc
 
-.DS_Store
-
+# Ignore Jupyter notebook checkpoints
 **/.ipynb_checkpoints
 
+# Ignore OS-specific files
+.DS_Store
 
-# logs/
-# tmp/

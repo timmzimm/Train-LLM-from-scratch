@@ -3,6 +3,11 @@ from tqdm import tqdm
 import numpy as np
 
 def evaluate(model, dataloader, device):
+    """
+    Evaluate the model on a given dataloader.
+
+    Computes the average cross-entropy loss over the dataset.
+    """
     model.eval()
     losses = []
     with torch.no_grad():

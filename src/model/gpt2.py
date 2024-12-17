@@ -3,6 +3,10 @@ import torch
 import torch.nn as nn
 
 class GPT2Config:
+    """
+    Configuration class for the GPT-2 style model.
+    Defines model hyperparameters.
+    """
     def __init__(self,
                  vocab_size: int,
                  n_ctx: int = 1024,
@@ -22,6 +26,10 @@ class GPT2Config:
         self.attn_dropout = attn_dropout
 
 class CausalSelfAttention(nn.Module):
+    """
+    Causal self-attention mechanism for GPT-2 style models.
+    Uses a lower-triangular mask to ensure causal (autoregressive) behavior.
+    """
     def __init__(self, config: GPT2Config):
         super().__init__()
         assert config.n_embd % config.n_head == 0
@@ -51,6 +59,10 @@ class CausalSelfAttention(nn.Module):
         return y
 
 class MLP(nn.Module):
+    """
+    Multi-layer perceptron block in the GPT-2 model.
+    Expands the embedding dimension, applies a non-linearity, and projects back.
+    """
     def __init__(self, config: GPT2Config):
         super().__init__()
         self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd)
@@ -66,6 +78,14 @@ class MLP(nn.Module):
         return x
 
 class Block(nn.Module):
+    """
+    A single Transformer block consisting of:
+    - LayerNorm
+    - Causal self-attention
+    - Another LayerNorm
+    - MLP
+    Residual connections are applied around both the attention and MLP sub-blocks.
+    """
     def __init__(self, config: GPT2Config):
         super().__init__()
         self.ln_1 = nn.LayerNorm(config.n_embd, eps=1e-5)
@@ -79,6 +99,12 @@ class Block(nn.Module):
         return x
 
 class GPT2Model(nn.Module):
+    """
+    GPT-2 style model:
+    - Token embedding + positional embedding
+    - N Transformer blocks
+    - Layer norm + linear head at the end
+    """
     def __init__(self, config: GPT2Config):
         super().__init__()
         self.config = config
@@ -92,12 +118,26 @@ class GPT2Model(nn.Module):
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
+        """
+        Initialize weights in a manner similar to the original GPT-2 initialization.
+        """
         if isinstance(module, (nn.Linear, nn.Embedding)):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
         if isinstance(module, nn.Linear) and module.bias is not None:
             nn.init.zeros_(module.bias)
 
     def forward(self, idx, targets=None):
+        """
+        Forward pass of the GPT-2 model.
+        
+        Args:
+            idx: (B,T) tensor of token IDs
+            targets: (B,T) tensor of token IDs to compute cross-entropy loss
+
+        Returns:
+            logits: (B,T,vocab_size) predictions of the next token
+            loss: scalar cross-entropy loss if targets are provided
+        """
         B,T = idx.size()
         if T > self.config.n_ctx:
             raise ValueError("Sequence length exceeds model context length")
@@ -117,3 +157,4 @@ class GPT2Model(nn.Module):
             loss = loss_fct(logits.view(-1, self.config.vocab_size), targets.view(-1))
 
         return logits, loss
+

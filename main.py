@@ -11,14 +11,26 @@ from src.training.train import train
 from src.utils.evaluation import evaluate
 
 def main():
-    # Загрузка конфигов
+    """
+    Main entry point for training the GPT-2 style model.
+
+    Steps:
+    - Load configuration files.
+    - Load and preprocess the dataset.
+    - Train the tokenizer on the training texts.
+    - Encode texts using the trained tokenizer.
+    - Create PyTorch datasets and loaders.
+    - Initialize and train the GPT-2 model.
+    - Save the final tokenizer and model checkpoint.
+    """
+    # Load configurations
     with open("config/dataset_config.json", "r") as f:
         dataset_config = json.load(f)
     with open("config/model_config.json", "r") as f:
         model_config_data = json.load(f)
     with open("config/training_config.json", "r") as f:
         train_config = json.load(f)
-    
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     print("Loading dataset...")
@@ -61,7 +73,7 @@ def main():
 
     if not val_ids:
         print("No tokens in validation data. Will train without validation.")
-    
+
     block_size = train_config["block_size"]
     train_dataset = TextDataset(train_ids, block_size)
     val_dataset = TextDataset(val_ids, block_size) if val_ids else None
@@ -71,7 +83,7 @@ def main():
 
     print(f"Train dataset sequences: {len(train_dataset)}, Val dataset sequences: {len(val_dataset) if val_dataset else 0}")
 
-    # Инициализируем конфиг модели GPT-2
+    # Initialize GPT-2 config
     config = GPT2Config(
         vocab_size=tokenizer.vocab.vocab_size,
         n_ctx=model_config_data["n_ctx"],
@@ -108,3 +120,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
