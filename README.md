@@ -1,15 +1,12 @@
 # GPT-2 Style LLM Training from Scratch
 
-**Inspired by [Sebastian Raschka's repository] (https://github.com/rasbt/LLMs-from-scratch) and his book, but not borrowed from it.**  
-
-
 This project implements a simplified GPT-2 style model (~120M parameters) from scratch and trains it on a large instruction dataset. The code is modular, uses configuration files, and aims to be educational — demonstrating the full pipeline without external large language model libraries.
 
 ## Overview
 
 This repository showcases:
 
-- **Custom BPE Tokenization:** A simplified Byte-Pair Encoding.
+- **Custom BPE Tokenization:** A simplified implementation with options for Byte-Level or Character-Level encoding.
 - **GPT-2 Style Model Architecture:** Multi-head causal self-attention, residual connections, and layer norms.
 - **Config-Driven Pipeline:** All parameters are controlled via JSON configs in the `config/` directory.
 

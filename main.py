@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from datasets import load_dataset
 
 from src.tokenization.bpe_tokenizer import BPETokenizer
+from src.tokenization.bytelevel_bpe_tokenizer import ByteLevelBPETokenizer
 from src.model.gpt2 import GPT2Config, GPT2Model
 from src.data.dataset import TextDataset, extract_texts
 from src.training.train import train
@@ -48,13 +49,32 @@ def main():
 
     if not train_texts:
         raise ValueError("No training data extracted. Check the dataset and extraction logic.")
+    
+    
 
     print("Training tokenizer...")
-    tokenizer = BPETokenizer(
-        special_tokens=train_config["special_tokens"],
-        vocab_size_limit=train_config["vocab_size_limit"],
-        merges_count=train_config["merges_count"]
-    )
+    tokenization_type = train_config["tokenization_type"]  # "char" or "byte"
+    if tokenization_type == "char":
+        tokenizer = BPETokenizer(
+            special_tokens=train_config["special_tokens"],
+            vocab_size_limit=train_config["vocab_size_limit"],
+            merges_count=train_config["merges_count"]
+        )
+        tokenizer_filename = "tokenizer_char.json"
+    elif tokenization_type == "byte":
+        tokenizer = ByteLevelBPETokenizer(
+            special_tokens=train_config["special_tokens"],
+            vocab_size_limit=train_config["vocab_size_limit"],
+            merges_count=train_config["merges_count"]
+        )
+        tokenizer_filename = "tokenizer_byte.json"
+    else:
+        raise ValueError(f"Unknown tokenization_type: {tokenization_type}")
+    # tokenizer = BPETokenizer(
+    #     special_tokens=train_config["special_tokens"],
+    #     vocab_size_limit=train_config["vocab_size_limit"],
+    #     merges_count=train_config["merges_count"]
+    # )
     tokenizer.train(train_texts)
     print("Tokenizer trained.")
 
@@ -96,20 +116,23 @@ def main():
     print("Model created with", sum(p.numel() for p in model.parameters()), "parameters.")
 
     print("Starting training...")
+    # main.py (excerpt where we call train)
+
+
     train(
         model=model,
         train_loader=train_loader,
         val_loader=val_loader,
         device=device,
-        epochs=train_config["epochs"],
-        lr=train_config["learning_rate"]
+        train_config=train_config
     )
+
 
     print("Saving model and tokenizer...")
     os.makedirs("model_checkpoint", exist_ok=True)
     torch.save(model.state_dict(), "model_checkpoint/model.pt")
 
-    with open("model_checkpoint/tokenizer.json", "w") as f:
+    with open(f"model_checkpoint/{tokenizer_filename}", "w") as f:
         json.dump({
             "special_tokens": tokenizer.vocab.special_tokens,
             "token2id": tokenizer.vocab.token2id,
