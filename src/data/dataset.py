@@ -25,16 +25,13 @@ class TextDataset(Dataset):
         y = self.data[start+1:end+1]
         return x, y
 
-def extract_texts(dataset, max_samples: int) -> List[str]:
+def extract_texts(dataset) -> List[str]:
     """
-    Extracts up to max_samples of user-assistant interaction texts from the dataset.
+    Extracts all user-assistant interaction texts from the given dataset split.
     Each extracted text combines the user's instruction and the assistant's response.
     """
     texts = []
-    count = 0
     for ex in dataset:
-        if count >= max_samples:
-            break
         if 'messages' in ex:
             try:
                 messages = json.loads(ex['messages'])
@@ -43,8 +40,8 @@ def extract_texts(dataset, max_samples: int) -> List[str]:
                 text = f"{instruction} {output}".strip()
                 if text:
                     texts.append(text)
-                    count += 1
             except json.JSONDecodeError:
                 # Skip if messages can't be decoded
                 pass
     return texts
+

@@ -18,19 +18,18 @@ def train(model, train_loader, val_loader, device, train_config):
               "warmup_epochs": 1,
               "cosine_epochs": 5,
               "learning_rate": 0.0003,
-              "eval_every_steps": 1000
+              "eval_every_steps": 1000,
+              "block_size": 1024,
+              "batch_size": 2,
               ...
             }
     """
-    # Extract config parameters
     warmup_epochs = train_config["warmup_epochs"]
     cosine_epochs = train_config["cosine_epochs"]
     lr = train_config["learning_rate"]
     eval_every_steps = train_config["eval_every_steps"]
 
-    # Total epochs = warmup + cosine
     epochs = warmup_epochs + cosine_epochs
-
     optimizer = optim.AdamW(model.parameters(), lr=lr)
 
     def get_lr_for_epoch(epoch):
@@ -50,7 +49,6 @@ def train(model, train_loader, val_loader, device, train_config):
 
     for epoch in range(epochs):
         model.train()
-        # Update learning rate for this epoch
         current_lr = get_lr_for_epoch(epoch)
         for param_group in optimizer.param_groups:
             param_group['lr'] = current_lr
@@ -59,7 +57,6 @@ def train(model, train_loader, val_loader, device, train_config):
         for i, (x, y) in enumerate(pbar):
             x = x.to(device)
             y = y.to(device)
-
             optimizer.zero_grad()
             _, loss = model(x, y)
             loss.backward()
@@ -67,15 +64,16 @@ def train(model, train_loader, val_loader, device, train_config):
 
             global_step += 1
 
-            # Evaluate only every 'eval_every_steps' steps (instead of every 100)
+            # Evaluate only every 'eval_every_steps' steps
             if len(val_loader) > 0 and global_step % eval_every_steps == 0:
                 val_loss = evaluate(model, val_loader, device)
                 pbar.set_postfix({"train_loss": loss.item(), "val_loss": val_loss})
 
-        # Optional: evaluate at the end of each epoch
+        # Optionally evaluate at the end of each epoch
         if len(val_loader) > 0:
             val_loss = evaluate(model, val_loader, device)
             print(f"End of epoch {epoch}, validation loss: {val_loss}")
+
 
 
 

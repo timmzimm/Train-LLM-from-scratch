@@ -1,14 +1,15 @@
 {
   "block_size": 1024,
-  "batch_size": 8,
+  "batch_size": 4,
   "warmup_epochs": 1,
-  "cosine_epochs": 2,
+  "cosine_epochs": 0,
   "learning_rate": 0.0003,
-  "eval_every_steps": 8000,
+  "eval_every_steps": 3500,
   "vocab_size_limit": 30000,
-  "merges_count": 5,
+  "merges_count": 2,
   "special_tokens": ["<|endoftext|>"],
-  "tokenization_type": "byte" 
+  "tokenization_type": "huggingface", 
+  "hf_tokenizer_name": "gpt2" 
 }
 
   
