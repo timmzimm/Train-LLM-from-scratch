@@ -29,6 +29,7 @@ We train on the [Orca Agent Instruct Dataset (1M)](https://huggingface.co/datase
    git clone https://github.com/timmzimm/Train-LLM-from-scratch.git
    cd Train-LLM-from-scratch
    pip install -r requirements.txt
+   ```
 
 ## Training
 
@@ -39,12 +40,14 @@ We support both single-GPU (or CPU) and multi-GPU (DDP) training.
 2. Run:
    ```bash
    python main.py
+   ```
 
 ### Multi-GPU (DDP)
 1. In `config/training_config.json`, set `"distributed": true` and GPU indices (for example, `"gpu_ids": [0,1]`).
 2. Run:
    ```bash
    torchrun --nproc_per_node=2 main.py
+   ```
 
 
 
