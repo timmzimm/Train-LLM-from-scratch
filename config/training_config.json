@@ -9,7 +9,9 @@
   "merges_count": 2,
   "special_tokens": ["<|endoftext|>"],
   "tokenization_type": "huggingface", 
-  "hf_tokenizer_name": "gpt2" 
+  "hf_tokenizer_name": "gpt2",
+  "gpu_ids": [0, 1],
+  "distributed": false
 }
 
   

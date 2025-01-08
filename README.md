@@ -30,9 +30,23 @@ We train on the [Orca Agent Instruct Dataset (1M)](https://huggingface.co/datase
    cd Train-LLM-from-scratch
    pip install -r requirements.txt
 
-   # For training:
+## Training
+
+We support both single-GPU (or CPU) and multi-GPU (DDP) training.
+
+### Single-GPU or CPU
+1. In `config/training_config.json`, set `"distributed": false`.
+2. Run:
+   ```bash
    python main.py
-   ```
+
+### Multi-GPU (DDP)
+1. In `config/training_config.json`, set `"distributed": true` and GPU indices (for example, `"gpu_ids": [0,1]`).
+2. Run:
+   ```bash
+   torchrun --nproc_per_node=2 main.py
+
+
 
 ## Acknowledgments
 - **Sebastian Raschka:** His transparent approach to LLMs was an inspiration.
