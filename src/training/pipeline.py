@@ -1,90 +1,67 @@
 import os
 import json
+from tqdm import tqdm
 import torch
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
-from torch.utils.data import DataLoader, DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-# Импорт модулей вашего проекта
-from datasets import load_dataset
 from transformers import GPT2TokenizerFast
 from src.tokenization.bpe_tokenizer import BPETokenizer
 from src.tokenization.bytelevel_bpe_tokenizer import ByteLevelBPETokenizer
 from src.data.dataset import TextDataset, extract_texts
+from src.data.load_data import load_and_merge_splits
 from src.model.gpt2 import GPT2Config, GPT2Model
 from src.training.train import train
-# ... etc.
 
 def run_training_pipeline_single(train_config):
     """
-    Single-GPU (or CPU) pipeline:
-    - device = cuda:0 if available, else cpu
-    - loads dataset
-    - prepares model
-    - trains
-    - saves checkpoint
+    Single-GPU or CPU training pipeline.
     """
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    local_rank = 0  # для совместимости
-
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    local_rank = 0
     _run_pipeline_core(train_config, device, local_rank, ddp=False)
 
-
-def run_training_pipeline_ddp(local_rank, train_config):
+def run_training_pipeline_ddp(train_config, local_rank):
     """
-    DDP pipeline for a single process (one GPU).
-    Typically called from ddp_main().
-
-    We map local_rank to an actual GPU index from train_config["gpu_ids"].
+    Multi-GPU DDP training pipeline for a single process (GPU).
+    local_rank is set by PyTorch (0..N-1).
     """
     gpu_ids = train_config["gpu_ids"]
-    device_id = gpu_ids[local_rank]  # 0 -> gpu_ids[0], 1 -> gpu_ids[1], etc.
+    device_id = gpu_ids[local_rank]
     device = torch.device(f"cuda:{device_id}")
     torch.cuda.set_device(device)
 
     _run_pipeline_core(train_config, device, local_rank, ddp=True)
 
-
 def _run_pipeline_core(train_config, device, local_rank, ddp=False):
     """
-    The actual pipeline code:
-    1) Load dataset
-    2) Extract texts
-    3) Initialize tokenizer
-    4) Encode data
-    5) Build model (optionally wrap in DDP)
-    6) Train
-    7) Save model (if local_rank == 0)
+    Core logic:
+    1) Load dataset config and merge all splits.
+    2) Extract texts from train/val (test is optional).
+    3) Tokenize texts (choose huggingface/char/byte).
+    4) Create DataLoader (distributed if ddp).
+    5) Create GPT-2 model, DDP if needed.
+    6) Run training.
+    7) Save model (on rank=0).
     """
 
-    # ----------------------------------------------------------------
-    # Load dataset config & model config
-    # ----------------------------------------------------------------
-    with open("config/dataset_config.json", "r") as f:
-        dataset_config = json.load(f)
-    with open("config/model_config.json", "r") as f:
-        model_config_data = json.load(f)
+    # 1) Load & merge splits
+    train_ds_full, val_ds_full, test_ds_full = load_and_merge_splits("config/dataset_config.json")
+    train_texts = extract_texts(train_ds_full)
+    val_texts   = extract_texts(val_ds_full)
+    
+    # Limit data for quick test (optional)
+    max_train = 1000  # or any number you want
+    max_val   = 200
+    train_texts = train_texts[:max_train]
+    val_texts   = val_texts[:max_val]
 
-    # ----------------------------------------------------------------
-    # 1) Load dataset & splits (example usage)
-    # ----------------------------------------------------------------
-    ds = load_dataset(dataset_config["dataset_name"])
-    ds_train = ds[dataset_config["train_split"]]
-    ds_val = ds[dataset_config["val_split"]]
-
-    # extract text
-    train_texts = extract_texts(ds_train)
-    val_texts = extract_texts(ds_val)
-
-    # ----------------------------------------------------------------
-    # 2) Initialize tokenizer (huggingface/char/byte)
-    # ----------------------------------------------------------------
+    # 2) Initialize tokenizer
     tokenization_type = train_config["tokenization_type"]
     if tokenization_type == "huggingface":
-        hf_tokenizer_name = train_config["hf_tokenizer_name"]
-        tokenizer = GPT2TokenizerFast.from_pretrained(hf_tokenizer_name)
-        # optionally add special tokens
-        # tokenizer.add_special_tokens(...)
+        tokenizer = GPT2TokenizerFast.from_pretrained(train_config["hf_tokenizer_name"])
         vocab_size = tokenizer.vocab_size
 
         def encode_func(txt):
@@ -116,69 +93,69 @@ def _run_pipeline_core(train_config, device, local_rank, ddp=False):
     else:
         raise ValueError(f"Unknown tokenization_type: {tokenization_type}")
 
-    # ----------------------------------------------------------------
-    # 3) Encode data
-    # ----------------------------------------------------------------
-    train_ids = []
-    for text in train_texts:
-        train_ids.extend(encode_func(text))
-    val_ids = []
-    for text in val_texts:
-        val_ids.extend(encode_func(text))
+   # 3) Encode data with tqdm progress
 
-    # ----------------------------------------------------------------
-    # 4) Create PyTorch datasets & loaders
-    # ----------------------------------------------------------------
+    train_ids = []
+    for t in tqdm(train_texts, desc="Encoding train texts"):
+        train_ids.extend(encode_func(t))
+
+    val_ids = []
+    for t in tqdm(val_texts, desc="Encoding val texts"):
+        val_ids.extend(encode_func(t))
+
+    # 4) Create PyTorch datasets & (optionally) distributed sampler
     block_size = train_config["block_size"]
     train_dataset = TextDataset(train_ids, block_size)
-    val_dataset = TextDataset(val_ids, block_size)
+    val_dataset   = TextDataset(val_ids,   block_size)
 
     if ddp:
-        # Each process sees a subset of data
         train_sampler = DistributedSampler(train_dataset)
-        val_sampler = DistributedSampler(val_dataset, shuffle=False)
-        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=train_config["batch_size"], sampler=train_sampler)
-        val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=train_config["batch_size"], sampler=val_sampler)
+        val_sampler   = DistributedSampler(val_dataset, shuffle=False)
+        train_loader = DataLoader(train_dataset, sampler=train_sampler, batch_size=train_config["batch_size"])
+        val_loader   = DataLoader(val_dataset,   sampler=val_sampler,   batch_size=train_config["batch_size"])
     else:
-        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=train_config["batch_size"], shuffle=True)
-        val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=train_config["batch_size"], shuffle=False)
+        train_loader = DataLoader(train_dataset, batch_size=train_config["batch_size"], shuffle=True)
+        val_loader   = DataLoader(val_dataset,   batch_size=train_config["batch_size"], shuffle=False)
 
-    # ----------------------------------------------------------------
-    # 5) Create model
-    # ----------------------------------------------------------------
-    config = GPT2Config(
+    # 5) Build model
+    with open("config/model_config.json", "r") as f:
+        model_config_data = json.load(f)
+
+    gpt2_cfg = GPT2Config(
         vocab_size=vocab_size,
         n_ctx=model_config_data["n_ctx"],
         n_embd=model_config_data["n_embd"],
         n_layer=model_config_data["n_layer"],
         n_head=model_config_data["n_head"]
     )
-    model = GPT2Model(config).to(device)
+    model = GPT2Model(gpt2_cfg).to(device)
 
     if ddp:
         model = DDP(model, device_ids=[device.index], output_device=device.index)
 
-    # ----------------------------------------------------------------
     # 6) Train
-    # ----------------------------------------------------------------
     train(model, train_loader, val_loader, device, train_config)
 
-    # ----------------------------------------------------------------
-    # 7) Save model (only rank 0 usually)
-    # ----------------------------------------------------------------
+    # 7) Save model on rank=0
     if (not ddp) or (ddp and local_rank == 0):
-        # save checkpoint
-        os.makedirs("model_checkpoint", exist_ok=True)
-        torch.save(model.state_dict(), "model_checkpoint/model.pt")
+        _save_model_and_tokenizer(model, tokenizer, tokenization_type)
 
-        # save tokenizer
-        if tokenization_type == "huggingface":
-            tokenizer.save_pretrained("model_checkpoint/hf_tokenizer")
-        else:
-            # Save merges / vocab
-            # ...
-            pass
+def _save_model_and_tokenizer(model, tokenizer, tokenization_type):
+    """
+    Saves the model checkpoint and tokenizer (if any).
+    """
+    os.makedirs("model_checkpoint", exist_ok=True)
+    torch.save(model.state_dict(), "model_checkpoint/model.pt")
 
-        print("[Pipeline] Model saved.")
+    if tokenization_type == "huggingface":
+        # GPT2TokenizerFast can save_pretrained
+        tokenizer.save_pretrained("model_checkpoint/hf_tokenizer")
+    else:
+        # For char/byte custom BPE
+        # If you want merges & token2id, add them here
+        pass
+
+    print("[Pipeline] Model saved.")
+
 
 
